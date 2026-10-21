@@ -1,0 +1,158 @@
+html[data-theme='obsidian'] {
+  color-scheme: dark;
+  --surface: #303132;
+  --surface-raised: #292a32;
+  --header: #252628;
+  --chat-bg: #222329;
+  --input-bg: #1d1e24;
+  --line: #404148;
+  --text: #eeedf4;
+  --muted: #a6a2af;
+  --accent: #e6b96b;
+  --on-accent: #252128;
+  --male-text: #a9d7fb;
+  --male-bg: #2b3642;
+  --female-text: #efbed7;
+  --female-bg: #38303b;
+  --unknown-text: #cdc8df;
+  --unknown-bg: #33303e;
+  --text-shadow: #0005;
+  --success: #63c781;
+  --hover: #ffffff12;
+}
+html[data-theme='cream'] {
+  color-scheme: light;
+  --surface: #f1ede5;
+  --surface-raised: #fffcf6;
+  --header: #f7f3eb;
+  --chat-bg: #faf7f0;
+  --input-bg: #fffdf9;
+  --line: #ded8cd;
+  --text: #39362f;
+  --muted: #797266;
+  --accent: #94692f;
+  --on-accent: #ffffff;
+  --male-text: #386786;
+  --male-bg: #e3edf4;
+  --female-text: #9d536e;
+  --female-bg: #f4e4ea;
+  --unknown-text: #766785;
+  --unknown-bg: #ece7ef;
+  --text-shadow: transparent;
+  --success: #32815c;
+  --hover: #253b4b0c;
+}
+html[data-theme='sakura'] {
+  color-scheme: light;
+  --surface: #f5e7ed;
+  --surface-raised: #fff8fb;
+  --header: #faeaf0;
+  --chat-bg: #fff1f5;
+  --input-bg: #fffafd;
+  --line: #e7cfd9;
+  --text: #50343f;
+  --muted: #886774;
+  --accent: #ab496e;
+  --on-accent: #ffffff;
+  --male-text: #4d688d;
+  --male-bg: #e2ebf7;
+  --female-text: #9c4167;
+  --female-bg: #f7dce8;
+  --unknown-text: #806380;
+  --unknown-bg: #eee2ee;
+  --text-shadow: transparent;
+  --success: #32815c;
+  --hover: #253b4b0c;
+}
+html[data-theme='mint'] {
+  color-scheme: light;
+  --surface: #e5efea;
+  --surface-raised: #f8fcfa;
+  --header: #e8f2ed;
+  --chat-bg: #eef7f3;
+  --input-bg: #fbfefc;
+  --line: #cbded4;
+  --text: #29483d;
+  --muted: #638174;
+  --accent: #287560;
+  --on-accent: #ffffff;
+  --male-text: #356985;
+  --male-bg: #dcecf3;
+  --female-text: #99536f;
+  --female-bg: #f2e1e9;
+  --unknown-text: #6e6985;
+  --unknown-bg: #e7e5f0;
+  --text-shadow: transparent;
+  --success: #32815c;
+  --hover: #253b4b0c;
+}
+html[data-theme='mist'] {
+  color-scheme: dark;
+  --surface: #263447;
+  --surface-raised: #29394e;
+  --header: #1b2636;
+  --chat-bg: #202b3b;
+  --input-bg: #1a2535;
+  --line: #3b4c63;
+  --text: #e6eef8;
+  --muted: #a3b4cb;
+  --accent: #91b8ef;
+  --on-accent: #142b47;
+  --male-text: #b4daff;
+  --male-bg: #2c4159;
+  --female-text: #efc4e5;
+  --female-bg: #403b52;
+  --unknown-text: #d1cce9;
+  --unknown-bg: #373c52;
+  --text-shadow: #0005;
+  --success: #63c781;
+  --hover: #ffffff12;
+}
+html[data-theme] {
+  --composer-bg: var(--header);
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --border: var(--line);
+  --el-color-primary: var(--accent);
+  --el-color-primary-light-3: color-mix(in srgb, var(--accent) 75%, var(--surface-raised));
+  --el-color-primary-light-5: color-mix(in srgb, var(--accent) 55%, var(--surface-raised));
+  --el-color-primary-light-7: color-mix(in srgb, var(--accent) 30%, var(--surface-raised));
+  --el-color-primary-light-8: color-mix(in srgb, var(--accent) 20%, var(--surface-raised));
+  --el-color-primary-light-9: color-mix(in srgb, var(--accent) 10%, var(--surface-raised));
+  --el-color-primary-dark-2: var(--accent);
+  --el-bg-color: var(--surface-raised);
+  --el-bg-color-overlay: var(--surface-raised);
+  --el-bg-color-page: var(--surface);
+  --el-fill-color-blank: var(--surface-raised);
+  --el-fill-color: var(--hover);
+  --el-fill-color-light: var(--hover);
+  --el-fill-color-lighter: var(--hover);
+  --el-border-color: var(--line);
+  --el-border-color-light: var(--line);
+  --el-border-color-lighter: var(--line);
+  --el-border-color-dark: var(--line);
+  --el-text-color-primary: var(--text);
+  --el-text-color-regular: var(--text);
+  --el-text-color-secondary: var(--muted);
+  --el-text-color-placeholder: var(--muted);
+  --el-text-color-disabled: var(--muted);
+  color: var(--text);
+  background: var(--surface);
+}
+.empty-icon,
+.connect-button,
+.latest-button {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--line);
+}
+.latest-button {
+  bottom: 75px;
+}
+.gift-icon,
+.gift-name,
+.gift-count {
+  color: var(--accent);
+}
+.field-error {
+  color: light-dark(#aa3945, #f19788);
+}

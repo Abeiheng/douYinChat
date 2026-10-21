@@ -1,0 +1,37 @@
+appId: com.danmaku.desktop
+productName: 弹幕
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - resources/**
+asarUnpack:
+  - resources/**
+win:
+  executableName: douyin
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  artifactName: ${name}-${version}-windows-${arch}-setup.${ext}
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerLanguages:
+    - zh_CN
+    - en_US
+  displayLanguageSelector: false
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeader: build/installer-header.bmp
+  installerSidebar: build/installer-sidebar.bmp
+  uninstallerSidebar: build/installer-sidebar.bmp
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+npmRebuild: false
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>弹幕</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span class="app-mark">弹</span>
+      <h1>弹幕</h1>
+      <span class="version">开发预览</span>
+    </header>
+    <div class="desktop-status"><i id="dot"></i><span id="connection">正在检查桌面连接…</span></div>
+    <section>
+      <p class="label">当前直播间</p>
+      <h2 id="room">请打开抖音直播间</h2>
+      <p id="capture" class="muted">尚未采集</p>
+      <button id="start" class="primary">开始采集</button
+      ><button id="stop" class="secondary" hidden>停止采集</button>
+    </section>
+    <p id="error" role="alert"></p>
+    <details id="pairing">
+      <summary>连接桌面端</summary>
+      <p class="muted">在桌面设置中复制配对码，粘贴到下方。</p>
+      <form id="pair-form">
+        <input
+          id="token"
+          type="password"
+          placeholder="输入本机配对码"
+          maxlength="48"
+          aria-label="本机配对码"
+        /><button type="submit">配对</button>
+      </form>
+    </details>
+    <footer>关闭弹窗不会停止采集。<br /><span>实验版仅转发可见弹幕，礼物采集待验证。</span></footer>
+    <script src="popup.js"></script>
+  </body>
+</html>

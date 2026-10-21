@@ -1,0 +1,154 @@
+:root {
+  color-scheme: dark;
+  font:
+    13px -apple-system,
+    BlinkMacSystemFont,
+    'PingFang SC',
+    sans-serif;
+  color: #eeedeb;
+  background: #2c2d2e;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  width: 300px;
+  margin: 0;
+  padding: 22px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+h1 {
+  font-size: 17px;
+  margin: 0;
+  font-weight: 600;
+}
+.app-mark {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: #efb33e20;
+  color: #efb33e;
+  border: 1px solid #79633b;
+  border-radius: 7px;
+  font-weight: 600;
+}
+.version {
+  font-size: 9px;
+  color: #929396;
+  margin-left: auto;
+}
+.desktop-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 23px 0;
+  color: #b8b9ba;
+  font-size: 12px;
+}
+i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #777;
+}
+i.connected {
+  background: #63c781;
+}
+section {
+  border-top: 1px solid #454648;
+  padding-top: 16px;
+}
+.label,
+.muted {
+  font-size: 11px;
+  color: #999a9c;
+  line-height: 1.8;
+}
+.label {
+  margin: 0 0 8px;
+}
+h2 {
+  font-size: 15px;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid #626365;
+  border-radius: 5px;
+  color: #ddd;
+  background: transparent;
+  padding: 8px 12px;
+}
+.primary,
+.secondary {
+  width: 100%;
+  margin-top: 10px;
+  height: 38px;
+  border-color: #a68340;
+  color: #efbd66;
+  background: #efb33e0d;
+}
+button:hover {
+  background: #efb33e22;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+details {
+  margin-top: 18px;
+}
+summary {
+  font-size: 11px;
+  color: #b9b0a0;
+  cursor: pointer;
+}
+form {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+input {
+  min-width: 0;
+  flex: 1;
+  font: inherit;
+  color: inherit;
+  background: #242526;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 8px;
+}
+footer {
+  color: #999a9c;
+  text-align: center;
+  line-height: 1.9;
+  margin-top: 24px;
+  font-size: 10px;
+}
+footer span {
+  color: #787a7d;
+  font-size: 9px;
+}
+#error {
+  color: #e4b16c;
+  font-size: 11px;
+  line-height: 1.8;
+  margin: 12px 0 0;
+  overflow-wrap: anywhere;
+}
+:focus-visible {
+  outline: 2px solid #efb33e;
+  outline-offset: 2px;
+}
+[hidden] {
+  display: none !important;
+}
