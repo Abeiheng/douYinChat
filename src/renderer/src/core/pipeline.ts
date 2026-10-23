@@ -3,6 +3,7 @@ import { matchKeyword, type Segment } from './keyword'
 export interface DisplayEvent extends LiveEvent {
   avatar?: string
   gender?: 'male' | 'female' | 'unknown'
+  repeatCount?: number
   segments: Segment[]
   matched: boolean
 }
@@ -26,6 +27,21 @@ export class EventPipeline {
       nickname: value.nickname.trim() || '匿名用户',
       segments,
       matched: segments.some((s) => s.match)
+    }
+    let prior = this.events.at(-1)
+    while (prior?.type === 'enter') {
+      const index = this.events.lastIndexOf(prior)
+      prior = index > 0 ? this.events[index - 1] : undefined
+    }
+    if (
+      value.type === 'danmaku' &&
+      prior?.type === 'danmaku' &&
+      prior.roomId === event.roomId &&
+      prior.sourceId === event.sourceId &&
+      prior.text === event.text
+    ) {
+      prior.repeatCount = (prior.repeatCount || 1) + 1
+      return prior
     }
     if (value.type === 'gift' && value.comboId) {
       const prior = this.events.find(

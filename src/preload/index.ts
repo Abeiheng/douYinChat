@@ -16,6 +16,7 @@ const api: DesktopAPI = {
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
   close: () => ipcRenderer.invoke('window:close'),
+  openLiveBrowser: () => ipcRenderer.invoke('browser:open-live'),
   notify: (title, body) => ipcRenderer.invoke('reminder:notify', title, body),
   getBridge: () => ipcRenderer.invoke('bridge:get'),
   getPairing: () => ipcRenderer.invoke('bridge:pairing'),
@@ -25,6 +26,13 @@ const api: DesktopAPI = {
     ipcRenderer.on('bridge:event', listener)
     return () => {
       ipcRenderer.removeListener('bridge:event', listener)
+    }
+  },
+  onVerification: (callback) => {
+    const listener = (_: Electron.IpcRendererEvent, detail: string): void => callback(detail)
+    ipcRenderer.on('bridge:verification', listener)
+    return () => {
+      ipcRenderer.removeListener('bridge:verification', listener)
     }
   },
   onBridge: (callback) => {

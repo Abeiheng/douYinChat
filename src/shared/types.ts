@@ -73,6 +73,7 @@ export interface Settings {
   roomId: string
   showDanmaku: boolean
   showGifts: boolean
+  listenEnter: boolean
   fontSize: number
   alwaysOnTop: boolean
   closeToTray: boolean
@@ -97,6 +98,7 @@ export const defaultSettings: Settings = {
   roomId: '',
   showDanmaku: true,
   showGifts: true,
+  listenEnter: true,
   fontSize: 14,
   alwaysOnTop: false,
   closeToTray: false,
@@ -110,7 +112,7 @@ export const defaultSettings: Settings = {
 export interface LiveEvent {
   isHost?: boolean
   id: string
-  type: 'danmaku' | 'gift'
+  type: 'danmaku' | 'gift' | 'enter'
   roomId: string
   sourceId: string
   receivedAt: number
@@ -145,11 +147,13 @@ export interface DesktopAPI {
   getSettings(): Promise<Settings>
   saveSettings(settings: Settings): Promise<Settings>
   close(): Promise<void>
+  openLiveBrowser(): Promise<void>
   notify(title: string, body: string): Promise<void>
   getBridge(): Promise<BridgeState>
   getPairing(): Promise<{ token: string; port: number }>
   setReceiving(receiving: boolean): Promise<void>
   onEvent(callback: (event: LiveEvent) => void): () => void
+  onVerification(callback: (detail: string) => void): () => void
   onBridge(callback: (state: BridgeState) => void): () => void
 }
 export function validateSettings(value: unknown): Settings {
@@ -161,6 +165,7 @@ export function validateSettings(value: unknown): Settings {
   const filterWords = s.filterWords ?? []
   const hideSelf = s.hideSelf ?? false
   const selfNickname = s.selfNickname ?? ''
+  const listenEnter = s.listenEnter ?? true
   if (
     !Number.isInteger(replyUserCooldown) ||
     replyUserCooldown < 0 ||
@@ -212,6 +217,7 @@ export function validateSettings(value: unknown): Settings {
   ] as const) {
     if (typeof s[key] !== 'boolean') throw new Error('设置开关无效')
   }
+  if (typeof listenEnter !== 'boolean') throw new Error('入场消息设置无效')
   if (typeof s.roomId !== 'string' || s.roomId.length > 200) throw new Error('直播间无效')
   if (![12, 14, 16].includes(s.fontSize)) throw new Error('字号无效')
   if (!Number.isInteger(s.cooldown) || s.cooldown < 0 || s.cooldown > 3600)
@@ -269,6 +275,7 @@ export function validateSettings(value: unknown): Settings {
     filterWords: [...new Set(filterWords.map((w) => w.trim()))],
     hideSelf,
     selfNickname: selfNickname.trim(),
+    listenEnter,
     autoReply,
     replyInterval,
     replyRules: replyRules.map((r) => ({ ...r, keyword: r.keyword.trim(), reply: r.reply.trim() })),
@@ -287,7 +294,7 @@ export function isLiveEvent(value: unknown): value is LiveEvent {
     !!e.id &&
     !!e.roomId &&
     !!e.sourceId &&
-    (e.type === 'danmaku' || e.type === 'gift') &&
+    (e.type === 'danmaku' || e.type === 'gift' || e.type === 'enter') &&
     Number.isFinite(e.receivedAt) &&
     (e.isHost === undefined || typeof e.isHost === 'boolean') &&
     (e.userId === undefined || (typeof e.userId === 'string' && e.userId.length <= 200)) &&

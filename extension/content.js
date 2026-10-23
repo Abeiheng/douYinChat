@@ -2,6 +2,7 @@
 // Experimental DOM adapter: only forward observed text. Gift fields are deliberately
 // unsupported until verified against a real live room and reliable combo identity.
 let enabled = false
+let entryEnabled = true
 let room
 let observedUrl = ''
 let sequence = 0
@@ -9,7 +10,40 @@ const sourceId = crypto.randomUUID()
 const processed = new WeakSet()
 const usersByEvent = new Map()
 let profileBusy = false
+let verificationReported = false
 const selectors = '[data-e2e="chat-message"], .webcast-chatroom___item'
+function checkVerification() {
+  const candidates = [
+    ...document.querySelectorAll(
+      '[role="dialog"], [aria-modal="true"], [class*="captcha" i], [id*="captcha" i], [class*="verify" i], [id*="verify" i]'
+    )
+  ]
+  const hit = candidates
+    .filter((node) => {
+      const style = window.getComputedStyle(node)
+      return (
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        node.getClientRects().length > 0
+      )
+    })
+    .map((node) => node.innerText || node.textContent || '')
+    .map((text) => text.replace(/\s+/g, ' ').trim())
+    .map((text) =>
+      text.match(
+        /(?:安全验证|滑块验证|人机验证|请完成验证|请验证|captcha|verification required|verify you are human|slide to verify)/i
+      )
+    )
+    .find(Boolean)
+  if (hit && !verificationReported) {
+    verificationReported = true
+    chrome.runtime
+      .sendMessage({ type: 'verification', detail: `直播页出现“${hit[0]}”，请在浏览器中完成验证` })
+      .catch(() => {})
+  } else if (!hit) {
+    verificationReported = false
+  }
+}
 function identify() {
   const id = location.pathname.match(/^\/(\d+)/)?.[1]
   if (!id) return undefined
@@ -60,6 +94,7 @@ chrome.runtime.onMessage.addListener((message, _, respond) => {
   }
   if (message.type === 'capture') {
     enabled = Boolean(message.enabled) && (!message.roomId || message.roomId === identify()?.id)
+    entryEnabled = message.entryEnabled !== false
     skipExisting()
     respond({ ok: true })
   }
@@ -71,25 +106,42 @@ function collect(element) {
     return
   }
   if (!enabled || !room || processed.has(element)) return
-  const textNode = element.querySelector(
-    '[data-e2e="chat-message-text"], .webcast-chatroom___content-with-emoji-text'
+  const entryRoot = element.matches('.webcast-chatroom___bottom_message')
+    ? element.firstElementChild
+    : null
+  const entrySpans = entryRoot ? [...entryRoot.querySelectorAll(':scope > span')] : []
+  const entryBodyNode = entrySpans.at(-1)
+  const entryNicknameNode = entrySpans.find(
+    (node) => node !== entryBodyNode && node.textContent?.trim()
   )
+  const isEntry = Boolean(
+    entryRoot &&
+    entryBodyNode &&
+    /^(?:来了|进入直播间|进来了)$/.test(entryBodyNode.textContent?.trim() || '')
+  )
+  const textNode =
+    element.querySelector(
+      '[data-e2e="chat-message-text"], .webcast-chatroom___content-with-emoji-text'
+    ) || (isEntry ? entryBodyNode : null)
   // Verified on a live room on 2026-10-21: the nickname is the preceding
   // sibling of the text wrapper. Avoid depending on generated CSS hashes.
   const preceding = textNode?.parentElement?.previousElementSibling
   const userNode =
     element.querySelector('[data-e2e="chat-message-user"], .webcast-chatroom___user-name') ||
-    (preceding?.textContent?.trim().endsWith('：') ? preceding : null)
+    (preceding?.textContent?.trim().endsWith('：') ? preceding : null) ||
+    (isEntry ? entryNicknameNode : null)
   const nickname = userNode?.textContent?.trim().replace(/：$/, '')
   const body = textNode?.textContent?.trim()
   if (!nickname || !body) return
+  if (isEntry && !entryEnabled) return
   processed.add(element)
   // Read only an explicit profile link belonging to this exact nickname node.
   const profileLink = userNode.matches('a[href]') ? userNode : userNode.querySelector('a[href]')
   const userId = profileLink
     ?.getAttribute('href')
     ?.match(/^(?:https:\/\/(?:www\.)?douyin\.com)?\/user\/([A-Za-z0-9_-]{1,200})(?:[?#/]|$)/)?.[1]
-  const platformId = element.getAttribute('data-message-id') || undefined
+  const platformId =
+    element.getAttribute('data-message-id') || element.getAttribute('data-id') || undefined
   const id = `${sourceId}-${sequence++}`
   usersByEvent.set(id, { node: userNode, nickname })
   if (usersByEvent.size > 2000) usersByEvent.delete(usersByEvent.keys().next().value)
@@ -98,7 +150,7 @@ function collect(element) {
       type: 'event',
       event: {
         id,
-        type: 'danmaku',
+        type: isEntry ? 'enter' : 'danmaku',
         sourceId,
         roomId: room.id,
         receivedAt: Date.now(),
@@ -112,6 +164,7 @@ function collect(element) {
     .catch(() => {})
 }
 const observer = new MutationObserver((records) => {
+  checkVerification()
   if (!enabled) return
   for (const record of records) {
     const parent =
@@ -128,6 +181,7 @@ const observer = new MutationObserver((records) => {
 })
 skipExisting()
 observer.observe(document.body, { childList: true, subtree: true, characterData: true })
+setInterval(checkVerification, 3000)
 observedUrl = location.href
 void announce()
 setInterval(() => {

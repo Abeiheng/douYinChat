@@ -16,7 +16,11 @@ watch(
   <div
     class="message-item user-message"
     :class="[
-      { 'gift-message': message.type === 'gift', 'host-message': message.isHost },
+      {
+        'gift-message': message.type === 'gift',
+        'entry-message': message.type === 'enter',
+        'host-message': message.isHost
+      },
       `bubble-${message.gender || 'unknown'}`
     ]"
     :data-host="message.isHost || undefined"
@@ -40,7 +44,13 @@ watch(
     <div class="message-content">
       <span class="nickname">{{ message.nickname }}</span
       ><span class="colon">：</span>
-      <span v-if="message.type === 'danmaku'" class="message-body">{{ message.text }}</span>
+      <span v-if="message.type === 'danmaku'" class="message-body"
+        >{{ message.text
+        }}<span v-if="message.repeatCount && message.repeatCount > 1" class="repeat-count">
+          ×{{ message.repeatCount }}</span
+        ></span
+      >
+      <span v-else-if="message.type === 'enter'" class="message-body entry-body">进入了直播间</span>
       <span v-else class="gift-body">
         <Present class="gift-icon" /><span class="gift-action">送出 </span
         ><span class="gift-name">{{ message.giftName }}</span
@@ -88,6 +98,27 @@ watch(
 }
 .bubble-unknown .avatar-placeholder {
   background: var(--unknown-bg);
+}
+.entry-message {
+  --row-tint: transparent;
+  opacity: 0.62;
+  margin: 2px 0;
+  padding: 2px 5px;
+  gap: 7px;
+  font-size: 0.82em;
+  box-shadow: none;
+}
+.entry-message .message-avatar {
+  display: none;
+}
+.entry-body {
+  color: var(--muted);
+}
+.repeat-count {
+  color: var(--muted);
+  font-size: 0.9em;
+  font-weight: 600;
+  white-space: nowrap;
 }
 .message-avatar {
   width: 32px;

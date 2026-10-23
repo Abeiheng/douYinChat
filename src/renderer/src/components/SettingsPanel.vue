@@ -99,6 +99,18 @@ async function copy(): Promise<void> {
       </div>
       <div class="setting-row">
         <div>
+          <span>监听入场消息</span>
+          <p class="helper">显示“某某来了”等直播间入场提示</p>
+        </div>
+        <ElSwitch
+          :model-value="app.settings.listenEnter"
+          :disabled="app.saving.value"
+          aria-label="监听入场消息"
+          @change="update({ listenEnter: Boolean($event) })"
+        />
+      </div>
+      <div class="setting-row">
+        <div>
           <span>关闭到托盘</span>
           <p class="helper">关闭窗口后继续采集与提醒</p>
         </div>

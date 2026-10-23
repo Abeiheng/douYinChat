@@ -20,6 +20,10 @@ function close(): void {
   else if (window.api) void window.api.close()
   else app.flash('浏览器预览不支持关闭桌面窗口')
 }
+function openBrowser(): void {
+  if (window.api) void window.api.openLiveBrowser()
+  else app.flash('浏览器预览不支持打开抖音直播')
+}
 </script>
 <template>
   <div class="app-window">
@@ -35,6 +39,7 @@ function close(): void {
       @settings="settingsOpen = true"
       @back="back"
       @close="close"
+      @open-browser="openBrowser"
     />
     <SettingsPanel v-if="settingsOpen" :app="app" @back="settingsOpen = false" />
     <MessageList
@@ -47,6 +52,8 @@ function close(): void {
       :font-size="app.settings.fontSize"
       :notice="app.notice.value"
       :has-messages="app.messages.value.length > 0"
+      :entry-count="app.entryCount.value"
+      :entry-prompt="app.entryPrompt.value"
       @demo="app.startDemo"
       @settings="settingsOpen = true"
       @block-user="app.blockUser"

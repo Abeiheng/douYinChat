@@ -14,6 +14,8 @@ const props = defineProps<{
   fontSize: number
   notice: string
   hasMessages: boolean
+  entryCount: number
+  entryPrompt: string
 }>()
 const emit = defineEmits<{
   demo: []
@@ -123,6 +125,12 @@ watch(
     result.value = ''
   }
 )
+const roomKey = computed(() =>
+  props.state.rooms
+    .map((room) => `${room.id}:${room.sourceId}`)
+    .sort()
+    .join(',')
+)
 function escape(event: KeyboardEvent): void {
   if (event.key === 'Escape') {
     closeMenu()
@@ -143,11 +151,20 @@ const scroller = ref<HTMLElement>()
 const following = ref(true)
 const pending = ref(0)
 const frozen = ref<DisplayEvent[]>([])
+watch(roomKey, () => {
+  frozen.value = []
+  following.value = true
+  pending.value = 0
+})
 const displayed = computed(() =>
   (following.value ? props.messages : frozen.value).filter(
     (message) =>
       !filterReason(message, props.settings) &&
-      (message.type === 'gift' ? props.settings.showGifts : props.settings.showDanmaku)
+      (message.type === 'gift'
+        ? props.settings.showGifts
+        : message.type === 'enter'
+          ? props.settings.listenEnter
+          : props.settings.showDanmaku)
   )
 )
 function pauseHistory(): void {
@@ -160,11 +177,13 @@ function wheel(event: WheelEvent): void {
 const stateText = computed(() =>
   props.state.status === 'error'
     ? props.state.detail
-    : props.state.status === 'stopped'
-      ? '已暂停接收，在设置中开始接收'
-      : props.state.status === 'disconnected'
-        ? '连接中断，正在等待扩展重新连接…'
-        : ''
+    : props.state.status === 'connected' && props.state.rooms.length === 0
+      ? '直播间已关闭或页面已刷新，请重新开始采集'
+      : props.state.status === 'stopped'
+        ? '已暂停接收，在设置中开始接收'
+        : props.state.status === 'disconnected'
+          ? '连接中断，正在等待扩展重新连接…'
+          : ''
 )
 function scroll(): void {
   const el = scroller.value
@@ -208,6 +227,8 @@ watch(
       <span>演示数据 · 用于预览界面</span><button @click="$emit('stopDemo')">退出演示</button>
     </div>
     <div v-if="notice" class="inline-notice" role="status">{{ notice }}</div>
+    <div v-if="entryCount" class="entry-summary" role="status">本场入场：{{ entryCount }} 人次</div>
+    <div v-if="entryPrompt" class="entry-alert" role="alert">{{ entryPrompt }}</div>
     <div v-if="stateText && !demo" class="connection-notice" role="status">{{ stateText }}</div>
     <div
       v-if="displayed.length"

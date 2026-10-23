@@ -27,11 +27,31 @@ export function useApp() {
   const messages = shallowRef<DisplayEvent[]>([])
   const notice = ref('')
   const incomingCount = ref(0)
+  const entryCount = ref(0)
+  const entryPrompt = ref('')
   const pipeline = new EventPipeline()
   const profileCache = new ProfileCache()
   const avatarQueue: DisplayEvent[] = []
   let loadingAvatar = false
   let disposed = false
+  let bridgeRoomKey = ''
+  let entryPromptTimer: ReturnType<typeof setTimeout> | undefined
+  let entryPromptHideTimer: ReturnType<typeof setTimeout> | undefined
+  let entryPromptSequence = 0
+  function scheduleEntryPrompt(nickname: string): void {
+    clearTimeout(entryPromptTimer)
+    clearTimeout(entryPromptHideTimer)
+    const sequence = ++entryPromptSequence
+    const show = (): void => {
+      if (sequence !== entryPromptSequence || disposed) return
+      entryPrompt.value = `${nickname} 进入了直播间`
+      entryPromptHideTimer = setTimeout(() => {
+        if (sequence === entryPromptSequence) entryPrompt.value = ''
+      }, 6000)
+    }
+    if (entryPrompt.value) show()
+    else entryPromptTimer = setTimeout(show, 3000)
+  }
   async function loadAvatars(): Promise<void> {
     if (loadingAvatar || !window.api) return
     loadingAvatar = true
@@ -43,6 +63,9 @@ export function useApp() {
         )
         if (!message) continue
         if (!pipeline.events.includes(message) || filterReason(message, settings)) continue
+        // An explicit platform user ID is required before attempting a profile lookup.
+        // Unauthenticated pages usually expose only the nickname, so leave the placeholder.
+        if (!message.userId) continue
         try {
           const profile = await profileCache.get(message, () =>
             window.api!.getUserProfile(message.sourceId, message.id)
@@ -86,6 +109,7 @@ export function useApp() {
     messages.value.filter(
       (m) =>
         !filterReason(m, settings) &&
+        m.type !== 'enter' &&
         (m.type === 'gift' ? settings.showGifts : settings.showDanmaku)
     )
   )
@@ -97,13 +121,22 @@ export function useApp() {
     }, 3000)
   }
   function receive(event: LiveEvent): void {
+    if (event.type === 'enter' && !settings.listenEnter) return
     const accepted = pipeline.accept(event, roomId.value, [])
     if (
       accepted &&
       !filterReason(accepted, settings) &&
-      (accepted.type === 'gift' ? settings.showGifts : settings.showDanmaku)
+      (accepted.type === 'gift'
+        ? settings.showGifts
+        : accepted.type === 'enter'
+          ? settings.listenEnter
+          : settings.showDanmaku)
     )
       incomingCount.value++
+    if (accepted?.type === 'enter') {
+      entryCount.value++
+      scheduleEntryPrompt(accepted.nickname)
+    }
     messages.value = [...pipeline.events]
     if (
       accepted &&
@@ -161,6 +194,11 @@ export function useApp() {
       flash(`已在当前直播间屏蔽 ${event.nickname}`)
   }
   function clear(): void {
+    clearTimeout(entryPromptTimer)
+    clearTimeout(entryPromptHideTimer)
+    entryPromptSequence++
+    entryPrompt.value = ''
+    entryCount.value = 0
     incomingCount.value = 0
     profileCache.clear()
     avatarQueue.length = 0
@@ -220,6 +258,15 @@ export function useApp() {
   }
   function applyBridge(state: BridgeState): void {
     const previous = bridge.value
+    const nextRoomKey = state.rooms
+      .map((room) => `${room.id}:${room.sourceId}`)
+      .sort()
+      .join(',')
+    if (bridgeRoomKey && bridgeRoomKey !== nextRoomKey) {
+      clear()
+      flash(nextRoomKey ? '已切换直播间，旧消息已清空' : '直播间已关闭或页面已刷新，消息已清空')
+    }
+    bridgeRoomKey = nextRoomKey
     bridge.value = state
     if (state.status === 'connected' && previous.status !== 'connected')
       flash('已连接，正在接收消息')
@@ -239,6 +286,9 @@ export function useApp() {
           window.api.onEvent((event) => {
             if (!demo.value) receive(event)
           }),
+          window.api.onVerification((detail) => {
+            flash(`浏览器验证提醒：${detail}`)
+          }),
           window.api.onBridge(applyBridge)
         )
         applyBridge(await window.api.getBridge())
@@ -254,6 +304,8 @@ export function useApp() {
     avatarQueue.length = 0
     clearInterval(timer)
     clearTimeout(noticeTimer)
+    clearTimeout(entryPromptTimer)
+    clearTimeout(entryPromptHideTimer)
     cleanups.forEach((fn) => fn())
   })
   return {
@@ -266,6 +318,8 @@ export function useApp() {
     loaded,
     messages,
     incomingCount,
+    entryCount,
+    entryPrompt,
     visibleMessages,
     roomId,
     roomName,

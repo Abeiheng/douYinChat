@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "弹幕 · 抖音直播助手（开发预览）",
-  "version": "0.3.4",
-  "description": "将当前抖音直播页可见弹幕转发到本地桌面窗口。弹幕已完成首轮实测，暂不支持真实礼物采集。",
+  "version": "0.3.6",
+  "description": "将当前抖音直播页可见弹幕和入场提示转发到本地桌面窗口。暂不支持真实礼物采集。",
   "minimum_chrome_version": "120",
   "permissions": ["storage", "alarms", "activeTab"],
   "host_permissions": ["https://live.douyin.com/*"],

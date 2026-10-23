@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Close, Setting, Top, Present, ChatDotRound } from '@element-plus/icons-vue'
+import { Close, Setting, Top, Present, ChatDotRound, Link } from '@element-plus/icons-vue'
 defineProps<{
   title: string
   settingsOpen: boolean
@@ -12,6 +12,7 @@ defineEmits<{
   settings: []
   back: []
   close: []
+  openBrowser: []
   toggleTop: []
   support: [mode: 'donation' | 'feedback']
 }>()
@@ -30,6 +31,14 @@ defineEmits<{
         @click="$emit('support', 'donation')"
       >
         <Present />
+      </button>
+      <button
+        class="icon-button browser-button"
+        aria-label="打开专用浏览器"
+        title="打开专用浏览器（自动加载扩展）"
+        @click="$emit('openBrowser')"
+      >
+        <Link />
       </button>
       <button
         class="icon-button support-entry"

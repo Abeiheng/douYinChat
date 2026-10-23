@@ -1,5 +1,7 @@
-import { app, BrowserWindow, ipcMain, Notification, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, Notification, Tray, Menu, nativeImage, shell } from 'electron'
 import { join } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { spawn } from 'node:child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { AutoReply } from './services/auto-reply'
 import { SettingsStore } from './services/settings'
@@ -110,6 +112,22 @@ else {
       (event) => {
         window.webContents.send('bridge:event', event)
         if (!bridge.isRecentReply(event.text)) void replies.receive(event)
+      },
+      17869,
+      store.value.listenEnter,
+      (detail) => {
+        window.webContents.send('bridge:verification', detail)
+        if (Notification.isSupported()) {
+          const notification = new Notification({
+            title: '抖音直播需要验证',
+            body: detail.slice(0, 200)
+          })
+          notification.on('click', () => {
+            window.show()
+            window.focus()
+          })
+          notification.show()
+        }
       }
     )
     bridge.start()
@@ -118,6 +136,7 @@ else {
     ipcMain.handle('settings:save', async (_, value) => {
       const previous = store.value
       const next = await store.save(value)
+      if (previous.listenEnter !== next.listenEnter) bridge.setEntryListening(next.listenEnter)
       if (
         previous.replyUserCooldown !== next.replyUserCooldown ||
         previous.replyMaxPerMinute !== next.replyMaxPerMinute ||
@@ -135,6 +154,34 @@ else {
       return next
     })
     ipcMain.handle('window:close', () => window.close())
+    ipcMain.handle('browser:open-live', () => {
+      const extensionPath = join(app.getAppPath(), 'extension')
+      const configPath = join(app.getAppPath(), 'output/playwright/extension.config.json')
+      try {
+        const config = JSON.parse(readFileSync(configPath, 'utf8'))
+        const executable = config.browser?.launchOptions?.executablePath
+        if (existsSync(extensionPath) && typeof executable === 'string' && existsSync(executable)) {
+          const profile = join(app.getPath('userData'), 'managed-browser-profile')
+          const child = spawn(
+            executable,
+            [
+              `--user-data-dir=${profile}`,
+              `--disable-extensions-except=${extensionPath}`,
+              `--load-extension=${extensionPath}`,
+              '--no-first-run',
+              '--no-default-browser-check',
+              'https://live.douyin.com'
+            ],
+            { detached: true, stdio: 'ignore' }
+          )
+          child.unref()
+          return
+        }
+      } catch {
+        // Fall back to the user's default browser when the managed browser is unavailable.
+      }
+      return shell.openExternal('https://live.douyin.com')
+    })
     ipcMain.handle('comment:send', (_, sourceId, text) => bridge.sendMessage(sourceId, text))
     ipcMain.handle('comment:reply', (_, sourceId, eventId, text) =>
       bridge.replyToComment(sourceId, eventId, text)

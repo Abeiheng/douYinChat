@@ -2,6 +2,7 @@
 let socket
 let paired = false
 let receiving = false
+let entryListening = true
 let heartbeat
 let current
 let connecting
@@ -35,12 +36,14 @@ async function connect() {
       if (message.type === 'paired') {
         paired = true
         receiving = message.receiving
+        entryListening = message.entryListening !== false
         if (current) {
           send({ type: 'room', room: current.room })
           try {
             await chrome.tabs.sendMessage(current.tabId, {
               type: 'capture',
               enabled: receiving,
+              entryEnabled: entryListening,
               roomId: current.room.id
             })
           } catch {
@@ -93,6 +96,19 @@ async function connect() {
             .sendMessage(current.tabId, {
               type: 'capture',
               enabled: receiving,
+              entryEnabled: entryListening,
+              roomId: current.room.id
+            })
+            .catch(() => {})
+      }
+      if (message.type === 'entry-listening') {
+        entryListening = message.enabled !== false
+        if (current)
+          chrome.tabs
+            .sendMessage(current.tabId, {
+              type: 'capture',
+              enabled: receiving,
+              entryEnabled: entryListening,
               roomId: current.room.id
             })
             .catch(() => {})
@@ -126,9 +142,25 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
           current = undefined
           await chrome.storage.session.remove('current')
         }
+        if (!current && paired && receiving) {
+          current = { tabId: sender.tab.id, room: message.room }
+          await chrome.storage.session.set({ current })
+          send({ type: 'room', room: current.room })
+          await chrome.tabs
+            .sendMessage(sender.tab.id, {
+              type: 'capture',
+              enabled: true,
+              entryEnabled: entryListening,
+              roomId: message.room.id
+            })
+            .catch(() => {})
+          return { enabled: true, automatic: true }
+        }
         return { enabled: false }
       }
       if (message.type === 'event' && current?.tabId === sender.tab.id && receiving) send(message)
+      if (message.type === 'verification' && current?.tabId === sender.tab.id && paired)
+        send(message)
       return { ok: true }
     }
     if (message.type === 'status') {
@@ -166,6 +198,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
       await chrome.tabs.sendMessage(tab.id, {
         type: 'capture',
         enabled: receiving,
+        entryEnabled: entryListening,
         roomId: room.id
       })
       return { ok: true, needsDesktopStart: !receiving }

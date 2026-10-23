@@ -23,14 +23,18 @@ export class ExtensionBridge {
   private clients = new Map<WebSocket, Client>()
   private timer?: ReturnType<typeof setInterval>
   private receiving = false
+  private entryListening = true
   private error?: string
   private hasConnected = false
   constructor(
     directory: string,
     private emitState: (state: BridgeState) => void,
     private emitEvent: (event: LiveEvent) => void,
-    readonly port = 17869
+    readonly port = 17869,
+    entryListening = true,
+    private emitWarning: (detail: string) => void = () => {}
   ) {
+    this.entryListening = entryListening
     const path = join(directory, 'pairing-token')
     try {
       this.token = readFileSync(path, 'utf8').trim()
@@ -90,23 +94,29 @@ export class ExtensionBridge {
       throw new Error('对应直播页已关闭或刷新，请点击新弹幕的昵称')
     if (!entry[1].userProfile) throw new Error('请重新加载扩展并刷新直播页，以启用用户资料查看')
     const id = randomBytes(16).toString('hex')
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.profiles.delete(id)
-        reject(new Error('用户资料读取超时，请检查直播页登录状态后重试'))
-      }, 6000)
-      this.profiles.set(id, { socket: entry[0], event, resolve, reject, timer })
-      entry[0].send(
-        JSON.stringify({
-          type: 'profile',
-          id,
-          eventId,
-          roomId: event.roomId,
-          sourceId,
-          expiresAt: Date.now() + 5000
-        })
-      )
-    })
+    try {
+      return await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          this.profiles.delete(id)
+          reject(new Error('用户资料读取超时，请检查直播页登录状态后重试'))
+        }, 6000)
+        this.profiles.set(id, { socket: entry[0], event, resolve, reject, timer })
+        entry[0].send(
+          JSON.stringify({
+            type: 'profile',
+            id,
+            eventId,
+            roomId: event.roomId,
+            sourceId,
+            expiresAt: Date.now() + 5000
+          })
+        )
+      })
+    } catch (error) {
+      if (/未能打开用户卡片|登录状态/.test((error as Error).message))
+        return { nickname: event.nickname }
+      throw error
+    }
   }
   private outgoing = new Map<string, number>()
   isRecentReply(text: string): boolean {
@@ -246,7 +256,13 @@ export class ExtensionBridge {
             client.authenticated = true
             this.hasConnected = true
             clearTimeout(timeout)
-            socket.send(JSON.stringify({ type: 'paired', receiving: this.receiving }))
+            socket.send(
+              JSON.stringify({
+                type: 'paired',
+                receiving: this.receiving,
+                entryListening: this.entryListening
+              })
+            )
             this.emitState(this.state)
             return
           }
@@ -278,6 +294,10 @@ export class ExtensionBridge {
               this.pending.delete(msg.id)
               pending.resolve(msg.detail.slice(0, 200))
             }
+            return
+          }
+          if (msg.type === 'verification' && typeof msg.detail === 'string') {
+            this.emitWarning(msg.detail.slice(0, 200))
             return
           }
           if (
@@ -343,6 +363,12 @@ export class ExtensionBridge {
       if (client.authenticated && socket.readyState === WebSocket.OPEN)
         socket.send(JSON.stringify({ type: 'receiving', receiving: value }))
     this.emitState(this.state)
+  }
+  setEntryListening(value: boolean): void {
+    this.entryListening = value
+    for (const [socket, client] of this.clients)
+      if (client.authenticated && socket.readyState === WebSocket.OPEN)
+        socket.send(JSON.stringify({ type: 'entry-listening', enabled: value }))
   }
   stop(): void {
     this.cancelPending()
